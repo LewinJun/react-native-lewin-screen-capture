@@ -32,6 +32,22 @@ RCT_EXPORT_METHOD(startListener:(RCTPromiseResolveBlock)success failure:(RCTResp
     });
 }
 
+RCT_EXPORT_METHOD(screenCapture:(RCTPromiseResolveBlock)success failure:(RCTResponseErrorBlock)failure){
+    dispatch_sync(dispatch_get_main_queue(), ^{
+        @try{
+            success([self screenImage]);
+        }@catch(NSException *ex){
+            NSString *domain = @"lewin.error";
+            NSString *desc = NSLocalizedString(@"开启失败", @"");
+            NSDictionary *userInfo = @{ NSLocalizedDescriptionKey : desc };
+            NSError *error = [NSError errorWithDomain:domain
+                                                 code:404
+                                             userInfo:userInfo];
+            failure(error);
+        }
+    });
+}
+
 RCT_EXPORT_METHOD(stopListener:(RCTPromiseResolveBlock)success failure:(RCTResponseErrorBlock)failure){
     dispatch_sync(dispatch_get_main_queue(), ^{
         @try{
@@ -60,8 +76,13 @@ RCT_EXPORT_METHOD(stopListener:(RCTPromiseResolveBlock)success failure:(RCTRespo
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationUserDidTakeScreenshotNotification object:nil];
 }
 
+-(NSArray<NSString *> *)supportedEvents {
+    return @[@"ScreenCapture"];
+}
+
 - (void)getScreenshot:(NSNotification *)notification{
     NSLog(@"捕捉截屏事件");
+
 //    CGSize imageSize = CGSizeZero;
 //     imageSize = [UIScreen mainScreen].bounds.size;
 
@@ -83,10 +104,36 @@ RCT_EXPORT_METHOD(stopListener:(RCTPromiseResolveBlock)success failure:(RCTRespo
 //         }
 //         CGContextRestoreGState(context);
 //     }
-// UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIImage *image = [self screenshot];
-    // UIGraphicsEndImageContext();
-    UIImageWriteToSavedPhotosAlbum(image, self, nil, nil);
+    [self sendEventWithName:@"ScreenCapture" body:[self screenImage]];
+}
+
+- (NSDictionary*) screenImage {
+    @try{
+        UIImage *image = [self screenshot];
+        NSArray *paths =NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask,YES);
+        long time = (long)[[NSDate new] timeIntervalSince1970];
+        NSString *filePath = [[paths objectAtIndex:0]stringByAppendingPathComponent:
+                              [NSString stringWithFormat:@"lewin-screen-capture/screen-capture-%ld.png", time]];
+        NSString *encodedImageStr = @"";
+        @try{
+            // UIGraphicsEndImageContext();
+            //    UIImageWriteToSavedPhotosAlbum(image, self, nil, nil);
+            // 保存文件的名称
+            
+            BOOL result =[UIImagePNGRepresentation(image)writeToFile:filePath atomically:YES]; // 保存成功会返回YES
+            encodedImageStr = [UIImagePNGRepresentation(image) base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
+            if (result == YES) {
+                NSLog(@"保存成功");
+            }
+        }@catch(NSException *ex) {
+            NSLog(@"保存图片失败：%@", ex.description);
+            filePath = @"";
+        }
+        return @{@"code":@"200", @"base64":encodedImageStr, @"uri":filePath};
+    }@catch(NSException *ex) {
+        NSLog(@"截屏失败：%@", ex.description);
+        return @{@"code":@"500", @"errMsg": @"截屏失败"};
+    }
 }
 
 - (UIImage *)screenshotOfView:(UIView *)view
