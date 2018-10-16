@@ -11,6 +11,7 @@
 #import "UIView+ComOpenThreadOTScreenshotHelperStatusBarReference.h"
 #import <QuartzCore/QuartzCore.h>
 
+#define PATH @"lewin-screen-capture"
 
 @implementation ScreenCapture
 RCT_EXPORT_MODULE();
@@ -53,6 +54,33 @@ RCT_EXPORT_METHOD(stopListener:(RCTPromiseResolveBlock)success failure:(RCTRespo
         @try{
             [self stopListener];
             success(@"true");
+        }@catch(NSException *ex){
+            NSString *domain = @"lewin.error";
+            NSString *desc = NSLocalizedString(@"开启失败", @"");
+            NSDictionary *userInfo = @{ NSLocalizedDescriptionKey : desc };
+            NSError *error = [NSError errorWithDomain:domain
+                                                 code:404
+                                             userInfo:userInfo];
+            failure(error);
+        }
+    });
+}
+
+RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTResponseErrorBlock)failure){
+    dispatch_sync(dispatch_get_main_queue(), ^{
+        @try{
+            NSArray *paths =NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask,YES);
+            
+            NSFileManager *fileManager = [NSFileManager defaultManager];
+            NSString *path =[[paths objectAtIndex:0]stringByAppendingPathComponent:PATH];
+            NSLog(@"count: %lu", [[fileManager enumeratorAtPath:path].allObjects count]);
+            if ([fileManager removeItemAtPath:path error:NULL]) {
+                success(@{@"code": @"200"});
+                NSLog(@"delete count: %lu", [[fileManager enumeratorAtPath:path].allObjects count]);
+            }else {
+                NSLog(@"delete fail: %lu", [[fileManager enumeratorAtPath:path].allObjects count]);
+                success(@{@"code": @"500", @"errMsg":@"删除失败"});
+            }
         }@catch(NSException *ex){
             NSString *domain = @"lewin.error";
             NSString *desc = NSLocalizedString(@"开启失败", @"");
@@ -111,9 +139,15 @@ RCT_EXPORT_METHOD(stopListener:(RCTPromiseResolveBlock)success failure:(RCTRespo
     @try{
         UIImage *image = [self screenshot];
         NSArray *paths =NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask,YES);
+        
+        NSFileManager *fileManager = [NSFileManager defaultManager];
+        NSString *path =[[paths objectAtIndex:0]stringByAppendingPathComponent:PATH];
+        if (![fileManager fileExistsAtPath:path]) {
+            [fileManager createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:nil];
+        }
         long time = (long)[[NSDate new] timeIntervalSince1970];
-        NSString *filePath = [[paths objectAtIndex:0]stringByAppendingPathComponent:
-                              [NSString stringWithFormat:@"lewin-screen-capture/screen-capture-%ld.png", time]];
+        NSString *filePath = [path stringByAppendingPathComponent:
+                              [NSString stringWithFormat:@"screen-capture-%ld.png", time]];
         NSString *encodedImageStr = @"";
         @try{
             // UIGraphicsEndImageContext();

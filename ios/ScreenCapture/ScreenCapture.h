@@ -8,9 +8,8 @@
 
 #import <Foundation/Foundation.h>
 #import <React/RCTBridgeModule.h>
+#import <React/RCTEventEmitter.h>
 
-@interface ScreenCapture : NSObject<RCTBridgeModule>
-
-
+@interface ScreenCapture : RCTEventEmitter <RCTBridgeModule>
 
 @end

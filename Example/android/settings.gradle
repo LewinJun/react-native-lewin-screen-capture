@@ -1,3 +1,5 @@
 rootProject.name = 'Example'
+include ':react-native-lewin-screen-capture'
+project(':react-native-lewin-screen-capture').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-lewin-screen-capture/android')
 
 include ':app'

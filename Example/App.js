@@ -37,6 +37,7 @@ export default class App extends Component<Props> {
         <TouchableOpacity onPress = {()=>{
           startListener(res=>{
             console.log(res)
+            // this.setState({uri:'data:image/png;base64,' + res.base64})
             this.setState({uri: res.uri})
           })
         }} activeOpacity = {0.6} style = {styles.btn}>

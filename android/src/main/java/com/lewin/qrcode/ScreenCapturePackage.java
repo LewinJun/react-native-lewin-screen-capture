@@ -13,12 +13,12 @@ import java.util.List;
  * Created by lewin on 2018/3/14.
  */
 
-public class QRScanReaderPackage implements ReactPackage {
+public class ScreenCapturePackage implements ReactPackage {
     @Override
     public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
         List<NativeModule> modules = new ArrayList<>();
 
-        modules.add(new QRScanReader(reactContext));
+        modules.add(new ScreenCapture(reactContext));
 
         return modules;
     }

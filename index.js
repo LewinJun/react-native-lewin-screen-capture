@@ -1,7 +1,7 @@
 
 'use strict'
 
-const { NativeModules, NativeEventEmitter } = require('react-native');
+const { NativeModules, NativeEventEmitter, DeviceEventEmitter, Platform } = require('react-native');
 
 let screenCaptureEmitter = undefined
 
@@ -17,7 +17,8 @@ export const startListener = (callBack : ((data:CALL_BBACK_PROPS) => void))=>{
   const ScreenCapture = NativeModules.ScreenCapture;
   // 创建自定义事件接口
   screenCaptureEmitter && screenCaptureEmitter.removeAllListeners()
-  screenCaptureEmitter = new NativeEventEmitter(ScreenCapture);
+
+  screenCaptureEmitter = Platform.OS === 'ios' ? new NativeEventEmitter(ScreenCapture) : DeviceEventEmitter;
   
   screenCaptureEmitter.addListener('ScreenCapture', (data : CALL_BBACK_PROPS) => {
     if (callBack) {
