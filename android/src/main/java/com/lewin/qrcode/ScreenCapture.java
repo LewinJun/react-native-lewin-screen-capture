@@ -100,8 +100,8 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void screenCapture(Promise promise) {
-        promise.resolve(shotActivity(getCurrentActivity()));
+    public void screenCapture(Boolean isHiddenStatus,Promise promise) {
+        promise.resolve(shotActivity(getCurrentActivity(), isHiddenStatus));
     }
 
     @ReactMethod
@@ -166,9 +166,9 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
      * @param context 要截图的Activity
      * @return Bitmap
      */
-    public static  WritableMap shotActivity(Activity context) {
+    public static  WritableMap shotActivity(Activity context, Boolean isHiddenStatus) {
         WritableMap map = Arguments.createMap();
-        Bitmap bitmap = ScreenUtils.snapShotWithoutStatusBar(context);
+        Bitmap bitmap = isHiddenStatus ? ScreenUtils.snapShotWithoutStatusBar(context) : ScreenUtils.snapShotWithStatusBar(context);
         Calendar now = new GregorianCalendar();
         SimpleDateFormat simpleDate = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
         String fileName = Environment.getExternalStorageDirectory() + path + simpleDate.format(now.getTime()) + ".png";

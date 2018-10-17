@@ -33,10 +33,10 @@ RCT_EXPORT_METHOD(startListener:(RCTPromiseResolveBlock)success failure:(RCTResp
     });
 }
 
-RCT_EXPORT_METHOD(screenCapture:(RCTPromiseResolveBlock)success failure:(RCTResponseErrorBlock)failure){
+RCT_EXPORT_METHOD(screenCapture:(BOOL)isHiddenStatus success:(RCTPromiseResolveBlock)success failure:(RCTResponseErrorBlock)failure){
     dispatch_sync(dispatch_get_main_queue(), ^{
         @try{
-            success([self screenImage]);
+            success([self screenImage: isHiddenStatus]);
         }@catch(NSException *ex){
             NSString *domain = @"lewin.error";
             NSString *desc = NSLocalizedString(@"开启失败", @"");
@@ -132,12 +132,12 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
 //         }
 //         CGContextRestoreGState(context);
 //     }
-    [self sendEventWithName:@"ScreenCapture" body:[self screenImage]];
+    [self sendEventWithName:@"ScreenCapture" body:[self screenImage:NO]];
 }
 
-- (NSDictionary*) screenImage {
+- (NSDictionary*) screenImage:(BOOL)isHiddenStatus {
     @try{
-        UIImage *image = [self screenshot];
+        UIImage *image = isHiddenStatus ? [self screenshotWithStatusBar:false] : [self screenshot];
         NSArray *paths =NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask,YES);
         
         NSFileManager *fileManager = [NSFileManager defaultManager];

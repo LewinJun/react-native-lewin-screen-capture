@@ -40,10 +40,14 @@ export const stopListener = ()=>{
 
 /**
  * 截取当前屏幕
+ * isHiddenStatus 是否隐藏状态栏 安卓无法把时间电池等信息截取建议隐藏
  */
-export const screenCapture = (callBack:((data:CALL_BBACK_PROPS) => void))=>{
+export const screenCapture = (callBack:((data:CALL_BBACK_PROPS) => void), isHiddenStatus)=>{
   const ScreenCapture = NativeModules.ScreenCapture;
-  ScreenCapture.screenCapture().then(res=>{
+  if (isHiddenStatus === undefined || isHiddenStatus === null) {
+    isHiddenStatus = Platform.OS === 'android'
+  }
+  ScreenCapture.screenCapture(isHiddenStatus).then(res=>{
     callBack && callBack(res)
   }).catch(err=>{
     callBack && callBack(err)
