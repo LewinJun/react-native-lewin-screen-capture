@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
@@ -62,8 +63,6 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
     @ReactMethod
     public void startListener(Promise promise) {
 
-        promise.resolve("true");
-
         if (Build.VERSION.SDK_INT > 22) {
             List<String> permissionList = new ArrayList<>();
             // 检查权限
@@ -73,7 +72,7 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
                 this.startListenerCapture(promise);
             }
             if (permissionList != null && (permissionList.size() != 0)) {
-                Activity activity = findActivity(reactContext);
+                Activity activity = getCurrentActivity();
                 if (activity != null) {
                     ActivityCompat.requestPermissions(activity, permissionList.toArray(new String[permissionList.size()]), 0);
                 }
@@ -86,32 +85,79 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void stopListener(Promise promise) {
-        if (manager != null) {
-            manager.stopListen();
-            manager = null;
-        }
+    public void stopListener(final Promise promise) {
+        getCurrentActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (manager != null) {
+                    manager.stopListen();
+                    manager = null;
+                }
+
+            }
+        });
         promise.resolve("true");
     }
 
     @ReactMethod
     public void screenCapture(Promise promise) {
-        promise.resolve(shotActivity(findActivity(reactContext)));
+        promise.resolve(shotActivity(getCurrentActivity()));
     }
 
-    private void startListenerCapture(Promise promise) {
-        // 开始监听
-        manager = ScreenCapturetListenManager.newInstance(reactContext);
-        manager.setListener(
-                new ScreenCapturetListenManager.OnScreenCapturetListen() {
-                    public void onShot(String imagePath) {
-                        // 获取到系统文件
-                        WritableMap map = Arguments.createMap();
-                        reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("ScreenCapture", map);
-                    }
-                }
-        );
-        promise.resolve("success");
+    @ReactMethod
+    public void clearCache(Promise promise) {
+        WritableMap map = Arguments.createMap();
+        try{
+            File file = new File(Environment.getExternalStorageDirectory() + path);
+            deleteFile(file);
+            map.putString("code", "200");
+            promise.resolve(map);
+        }catch (Exception ex) {
+            ex.printStackTrace();
+            promise.reject("500", ex.getMessage());
+        }
+
+
+    }
+    private void deleteFile(File file) {
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            for (int i = 0; i < files.length; i++) {
+                File f = files[i];
+                deleteFile(f);
+            }
+            file.delete();//如要保留文件夹，只删除文件，请注释这行
+        } else if (file.exists()) {
+            file.delete();
+        }
+    }
+
+
+    private void startListenerCapture(final Promise promise) {
+        getCurrentActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                //此时已在主线程中，可以更新UI了
+                // 开始监听
+                manager = ScreenCapturetListenManager.newInstance(reactContext);
+                manager.setListener(
+                        new ScreenCapturetListenManager.OnScreenCapturetListen() {
+                            public void onShot(String imagePath) {
+                                // 获取到系统文件
+                                WritableMap map = Arguments.createMap();
+                                map.putString("code", "200");
+                                map.putString("uri", imagePath.indexOf("file://") == 0 ? imagePath : "file://" + imagePath);
+                                map.putString("base64", bitmapToBase64(BitmapFactory.decodeFile(imagePath)));
+                                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("ScreenCapture", map);
+                            }
+                        }
+                );
+                manager.startListen();
+                promise.resolve("success");
+            }
+        });
+
+
     }
 
     /**
@@ -122,17 +168,15 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
      */
     public static  WritableMap shotActivity(Activity context) {
         WritableMap map = Arguments.createMap();
-        View view = context.getWindow().getDecorView();
-        view.setDrawingCacheEnabled(true);
-        view.buildDrawingCache();
-
-        Bitmap bitmap = Bitmap.createBitmap(view.getDrawingCache(), 0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
-        view.setDrawingCacheEnabled(false);
-        view.destroyDrawingCache();
+        Bitmap bitmap = ScreenUtils.snapShotWithoutStatusBar(context);
         Calendar now = new GregorianCalendar();
         SimpleDateFormat simpleDate = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
         String fileName = Environment.getExternalStorageDirectory() + path + simpleDate.format(now.getTime()) + ".png";
         try {
+            File fileDir = new File(Environment.getExternalStorageDirectory() + path);
+            if(!fileDir.exists()) {
+                fileDir.mkdir();
+            }
             File file = new File(fileName);
             if(file.exists()) {
                 file.delete();
@@ -143,7 +187,7 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
             out.flush();
             out.close();
             map.putString("code", "200");
-            map.putString("uri", fileName);
+            map.putString("uri", "file://" + fileName);
             map.putString("base64", bitmapToBase64(bitmap));
         } catch (Exception e) {
             e.printStackTrace();
@@ -189,22 +233,6 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
             }
         }
         return result;
-    }
-
-
-
-
-    @Nullable
-    public static Activity findActivity(Context context) {
-        if (context instanceof Activity) {
-            return (Activity) context;
-        }
-        if (context instanceof ContextWrapper) {
-            ContextWrapper wrapper = (ContextWrapper) context;
-            return findActivity(wrapper.getBaseContext());
-        } else {
-            return null;
-        }
     }
 
 }
