@@ -10,58 +10,68 @@ type CALL_BBACK_PROPS = {
   uri: string, // 文件路径
   base64: string, // 图片base64 png
 }
-/**
- * 开启监听
- */
-export const startListener = (callBack : ((data:CALL_BBACK_PROPS) => void))=>{
-  const ScreenCapture = NativeModules.ScreenCapture;
-  // 创建自定义事件接口
-  screenCaptureEmitter && screenCaptureEmitter.removeAllListeners()
-
-  screenCaptureEmitter = Platform.OS === 'ios' ? new NativeEventEmitter(ScreenCapture) : DeviceEventEmitter;
-  
-  screenCaptureEmitter.addListener('ScreenCapture', (data : CALL_BBACK_PROPS) => {
-    if (callBack) {
-      callBack(data)
-    }
-  })
-  ScreenCapture.startListener();    
-  return screenCaptureEmitter
-}
 
 /**
- * 关闭监听
+ * 获取系统截屏事件/截屏工具类
+ * android 默认不包含状态时间
+ * ios 截屏不包含时间
  */
-export const stopListener = ()=>{
-  screenCaptureEmitter && screenCaptureEmitter.removeAllListeners()
-  const ScreenCapture = NativeModules.ScreenCapture;
-  return ScreenCapture.stopListener();    
-}
+export default class ScreenCaptureUtil  {
 
-/**
- * 截取当前屏幕
- * isHiddenStatus 是否隐藏状态栏 安卓无法把时间电池等信息截取建议隐藏
- */
-export const screenCapture = (callBack:((data:CALL_BBACK_PROPS) => void), isHiddenStatus)=>{
-  const ScreenCapture = NativeModules.ScreenCapture;
-  if (isHiddenStatus === undefined || isHiddenStatus === null) {
-    isHiddenStatus = Platform.OS === 'android'
+  /**
+   * 开始监听截屏事件
+   * @param {*} callBack 
+   */
+  static startListener (callBack : ((data:CALL_BBACK_PROPS) => void)) {
+    const ScreenCapture = NativeModules.ScreenCapture;
+    // 创建自定义事件接口
+    screenCaptureEmitter && screenCaptureEmitter.removeAllListeners('ScreenCapture')
+
+    screenCaptureEmitter = Platform.OS === 'ios' ? new NativeEventEmitter(ScreenCapture) : DeviceEventEmitter;
+    
+    screenCaptureEmitter.addListener('ScreenCapture', (data : CALL_BBACK_PROPS) => {
+      if (callBack) {
+        callBack(data)
+      }
+    })
+    ScreenCapture.startListener();    
+    return screenCaptureEmitter
   }
-  ScreenCapture.screenCapture(isHiddenStatus).then(res=>{
-    callBack && callBack(res)
-  }).catch(err=>{
-    callBack && callBack(err)
-  })
-}
 
-/**
- * 删除缓存中的文件
- */
-export const clearCache = (callBack:((data:CALL_BBACK_PROPS) => void))=>{
-  const ScreenCapture = NativeModules.ScreenCapture;
-  ScreenCapture.clearCache().then(res=>{
-    callBack && callBack(res)
-  }).catch(err=>{
-    callBack && callBack(err)
-  })
+  /**
+   * 停止监听
+   */
+  static stopListener () {
+    screenCaptureEmitter && screenCaptureEmitter.removeAllListeners('ScreenCapture')
+    const ScreenCapture = NativeModules.ScreenCapture;
+    return ScreenCapture.stopListener();    
+  }
+
+  /**
+   * 清除截屏缓存文件
+   * @param {*} callBack 
+   */
+  static clearCache (callBack:((data:CALL_BBACK_PROPS) => void)) {
+    const ScreenCapture = NativeModules.ScreenCapture;
+    ScreenCapture.clearCache().then(res=>{
+      callBack && callBack(res)
+    }).catch(err=>{
+      callBack && callBack(err)
+    })
+  }
+
+  /**
+   * 截取当前屏幕方法
+   */
+  static screenCapture = (callBack:((data:CALL_BBACK_PROPS) => void), isHiddenStatus) => {
+    const ScreenCapture = NativeModules.ScreenCapture;
+    if (isHiddenStatus === undefined || isHiddenStatus === null) {
+      isHiddenStatus = Platform.OS === 'android'
+    }
+    ScreenCapture.screenCapture(isHiddenStatus).then(res=>{
+      callBack && callBack(res)
+    }).catch(err=>{
+      callBack && callBack(err)
+    })
+  }
 }

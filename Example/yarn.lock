@@ -5251,7 +5251,7 @@ react-is@^16.5.0:
   version "16.5.2"
   resolved "https://registry.npmjs.org/react-is/-/react-is-16.5.2.tgz#e2a7b7c3f5d48062eb769fcb123505eb928722e3"
 
-"react-native-lewin-screen-capture@file:..":
+react-native-lewin-screen-capture@../:
   version "1.0.0"
 
 react-native@0.57.2:

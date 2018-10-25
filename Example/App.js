@@ -9,7 +9,7 @@
 import React, {Component} from 'react';
 import {Platform, StyleSheet, Text, View, TouchableOpacity, Image} from 'react-native';
 
-import {startListener, stopListener, screenCapture, clearCache} from 'react-native-lewin-screen-capture'
+import ScreenCaptureUtil from 'react-native-lewin-screen-capture'
 
 const instructions = Platform.select({
   ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
@@ -35,7 +35,7 @@ export default class App extends Component<Props> {
       <View style={styles.container}>
        <Image source = {{uri: uri}} style = {{width: 200, height: 350, backgroundColor: 'red'}}/>
         <TouchableOpacity onPress = {()=>{
-          startListener(res=>{
+          ScreenCaptureUtil.startListener(res=>{
             console.log(res)
             // this.setState({uri:'data:image/png;base64,' + res.base64})
             this.setState({uri: res.uri})
@@ -44,13 +44,13 @@ export default class App extends Component<Props> {
           <Text> 开始监听截屏事件 </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress = {()=>{
-          stopListener()
+          ScreenCaptureUtil.stopListener()
         }} activeOpacity = {0.6} style = {styles.btn}>
           <Text> 关闭监听截屏事件 </Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress = {()=>{
-          screenCapture((res)=>{
+          ScreenCaptureUtil.screenCapture((res)=>{
             console.log(res)
             this.setState({uri: res.uri})
           })
@@ -59,7 +59,7 @@ export default class App extends Component<Props> {
         </TouchableOpacity>
 
         <TouchableOpacity onPress = {()=>{
-          clearCache()
+          ScreenCaptureUtil.clearCache()
         }} activeOpacity = {0.6} style = {styles.btn}>
           <Text> 删除缓存 </Text>
         </TouchableOpacity>
