@@ -1,6 +1,6 @@
 {
   "name": "react-native-lewin-screen-capture",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "获取系统截屏事件与获取当前屏幕截屏",
   "main": "index.js",
   "scripts": {
@@ -24,6 +24,9 @@
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/LewinJun/react-native-lewin-screen-capture/issues"
+  },
+  "peerDependencies": {
+    "react-native": ">0.50.0"
   },
   "homepage": "https://github.com/LewinJun/react-native-lewin-screen-capture#readme"
 }
