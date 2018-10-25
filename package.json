@@ -15,8 +15,10 @@
     "系统截屏事件",
     "获取截屏事件",
     "react",
-    "react",
-    "native"
+    "reactnative",
+    "截屏",
+    "capture",
+    "screencapture"
   ],
   "author": "Lewin",
   "license": "ISC",

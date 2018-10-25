@@ -15,22 +15,22 @@ react-native 获取系统截屏通知并获取图片/截取当前屏幕
 ### NOTE: 可以参考Example的App.js中的方法
 
 ```javascript
-import {startListener, stopListener, screenCapture, clearCache} from 'react-native-lewin-screen-capture'
+import ScreenCaptureUtil from 'react-native-lewin-screen-capture'
 
 // 开始监听
-startListener(res=>{
+ScreenCaptureUtil.startListener(res=>{
             console.log(res)
             // this.setState({uri:'data:image/png;base64,' + res.base64})
             this.setState({uri: res.uri})
           })
 // 停止监听
-stopListener()
+ScreenCaptureUtil.stopListener()
 // 截取当前屏幕
-screenCapture((res)=>{
+ScreenCaptureUtil.screenCapture((res)=>{
             console.log(res)
             this.setState({uri: res.uri})
           })
 // 清理缓存
-clearCache()
+ScreenCaptureUtil.clearCache()
 ```
 
