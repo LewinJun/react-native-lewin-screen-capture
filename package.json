@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "react native 获取系统截屏事件与获取当前屏幕截屏",
-    "prepare": "rm -rf android/build Example/android/build Example/android/app/build node_modules"
+    "prepare": "rm -rf android/build Example/android/build Example/android/app/build node_modules Example/ios/build"
   },
   "repository": {
     "type": "git",
