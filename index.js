@@ -19,7 +19,7 @@ type CALL_BBACK_PROPS = {
 export default class ScreenCaptureUtil  {
 
   /**
-   * 开始监听截屏事件
+   * 开始监听截屏事件， keyWords android 监听数据变化，截屏文件名的关键字
    * @param {*} callBack 
    */
   static startListener (callBack : ((data:CALL_BBACK_PROPS) => void), keyWords) {
@@ -34,8 +34,12 @@ export default class ScreenCaptureUtil  {
         callBack(data)
       }
     })
+    if (Platform.OS === 'android') {
+      ScreenCapture.startListener(keyWords);    
+    } else {
+      ScreenCapture.startListener();    
+    }
     
-    ScreenCapture.startListener(keyWords);    
     return screenCaptureEmitter
   }
 

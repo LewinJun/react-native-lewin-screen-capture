@@ -39,7 +39,7 @@ export default class App extends Component<Props> {
             console.log(res)
             // this.setState({uri:'data:image/png;base64,' + res.base64})
             this.setState({uri: res.uri})
-          })
+          },'abc,test')
         }} activeOpacity = {0.6} style = {styles.btn}>
           <Text> 开始监听截屏事件 </Text>
         </TouchableOpacity>

@@ -95,9 +95,9 @@ public class ScreenCapturetListenManager {
         mFileKeyWords = fileKeyWords;
     }
 
-    public static ScreenCapturetListenManager newInstance(Context context) {
+    public static ScreenCapturetListenManager newInstance(Context context, String[] fileKeyWords) {
         assertInMainThread();
-        return new ScreenCapturetListenManager(context);
+        return new ScreenCapturetListenManager(context, fileKeyWords);
     }
 
     /**

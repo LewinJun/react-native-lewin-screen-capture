@@ -10,7 +10,7 @@
     "npm": "^6.1.0",
     "react": "16.5.0",
     "react-native": "0.57.2",
-    "react-native-lewin-screen-capture": "../"
+    "react-native-lewin-screen-capture": "1.0.5"
   },
   "devDependencies": {
     "babel-jest": "23.6.0",

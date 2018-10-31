@@ -69,7 +69,7 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
             if (ContextCompat.checkSelfPermission(reactContext, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 permissionList.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             } else {
-                this.startListenerCapture(promise);
+                this.startListenerCapture(promise, keywords);
             }
             if (permissionList != null && (permissionList.size() != 0)) {
                 Activity activity = getCurrentActivity();
@@ -80,7 +80,7 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
             }
 
         }else {
-            this.startListenerCapture(promise);
+            this.startListenerCapture(promise, keywords);
         }
     }
 
@@ -138,14 +138,14 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
     }
 
 
-    private void startListenerCapture(final String[] keywords,final Promise promise) {
+    private void startListenerCapture(final Promise promise, final String[] keywords) {
         try{
             getCurrentActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     //此时已在主线程中，可以更新UI了
                     // 开始监听
-                    manager = ScreenCapturetListenManager.newInstance(reactContext);
+                    manager = ScreenCapturetListenManager.newInstance(reactContext, keywords);
                     manager.setListener(
                             new ScreenCapturetListenManager.OnScreenCapturetListen() {
                                 public void onShot(String imagePath) {
