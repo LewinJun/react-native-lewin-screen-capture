@@ -22,7 +22,7 @@ ScreenCaptureUtil.startListener(res=>{
             console.log(res)
             // this.setState({uri:'data:image/png;base64,' + res.base64})
             this.setState({uri: res.uri})
-          })
+          }, '截屏,screen')
 // 停止监听
 ScreenCaptureUtil.stopListener()
 // 截取当前屏幕
