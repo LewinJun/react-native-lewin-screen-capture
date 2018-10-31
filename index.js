@@ -22,7 +22,7 @@ export default class ScreenCaptureUtil  {
    * 开始监听截屏事件
    * @param {*} callBack 
    */
-  static startListener (callBack : ((data:CALL_BBACK_PROPS) => void)) {
+  static startListener (callBack : ((data:CALL_BBACK_PROPS) => void), keyWords) {
     const ScreenCapture = NativeModules.ScreenCapture;
     // 创建自定义事件接口
     screenCaptureEmitter && screenCaptureEmitter.removeAllListeners('ScreenCapture')
@@ -34,7 +34,8 @@ export default class ScreenCaptureUtil  {
         callBack(data)
       }
     })
-    ScreenCapture.startListener();    
+    
+    ScreenCapture.startListener(keyWords);    
     return screenCaptureEmitter
   }
 

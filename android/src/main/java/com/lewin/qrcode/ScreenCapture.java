@@ -61,7 +61,7 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void startListener(Promise promise) {
+    public void startListener(String[] keywords,Promise promise) {
 
         if (Build.VERSION.SDK_INT > 22) {
             List<String> permissionList = new ArrayList<>();
@@ -86,17 +86,22 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void stopListener(final Promise promise) {
-        getCurrentActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (manager != null) {
-                    manager.stopListen();
-                    manager = null;
-                }
+        try{
+            getCurrentActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (manager != null) {
+                        manager.stopListen();
+                        manager = null;
+                    }
 
-            }
-        });
-        promise.resolve("true");
+                }
+            });
+            promise.resolve("true");
+        }catch (Exception ex) {
+            ex.printStackTrace();
+            promise.reject("500", ex.getMessage());
+        }
     }
 
     @ReactMethod
@@ -133,29 +138,34 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
     }
 
 
-    private void startListenerCapture(final Promise promise) {
-        getCurrentActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                //此时已在主线程中，可以更新UI了
-                // 开始监听
-                manager = ScreenCapturetListenManager.newInstance(reactContext);
-                manager.setListener(
-                        new ScreenCapturetListenManager.OnScreenCapturetListen() {
-                            public void onShot(String imagePath) {
-                                // 获取到系统文件
-                                WritableMap map = Arguments.createMap();
-                                map.putString("code", "200");
-                                map.putString("uri", imagePath.indexOf("file://") == 0 ? imagePath : "file://" + imagePath);
-                                map.putString("base64", bitmapToBase64(BitmapFactory.decodeFile(imagePath)));
-                                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("ScreenCapture", map);
+    private void startListenerCapture(final String[] keywords,final Promise promise) {
+        try{
+            getCurrentActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    //此时已在主线程中，可以更新UI了
+                    // 开始监听
+                    manager = ScreenCapturetListenManager.newInstance(reactContext);
+                    manager.setListener(
+                            new ScreenCapturetListenManager.OnScreenCapturetListen() {
+                                public void onShot(String imagePath) {
+                                    // 获取到系统文件
+                                    WritableMap map = Arguments.createMap();
+                                    map.putString("code", "200");
+                                    map.putString("uri", imagePath.indexOf("file://") == 0 ? imagePath : "file://" + imagePath);
+                                    map.putString("base64", bitmapToBase64(BitmapFactory.decodeFile(imagePath)));
+                                    reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("ScreenCapture", map);
+                                }
                             }
-                        }
-                );
-                manager.startListen();
-                promise.resolve("success");
-            }
-        });
+                    );
+                    manager.startListen();
+                    promise.resolve("success");
+                }
+            });
+        }catch (Exception ex) {
+            ex.printStackTrace();
+            promise.reject("500", ex.getMessage());
+        }
 
 
     }

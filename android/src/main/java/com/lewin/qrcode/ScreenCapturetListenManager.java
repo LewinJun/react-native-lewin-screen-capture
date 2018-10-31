@@ -44,7 +44,7 @@ public class ScreenCapturetListenManager {
     private static final String[] KEYWORDS = {
             "screenshot", "screen_shot", "screen-shot", "screen shot",
             "screencapture", "screen_capture", "screen-capture", "screen capture",
-            "screencap", "screen_cap", "screen-cap", "screen cap"
+            "screencap", "screen_cap", "screen-cap", "screen cap", "截屏"
     };
 
     private static Point sScreenRealSize;
@@ -70,12 +70,14 @@ public class ScreenCapturetListenManager {
      */
     private MediaContentObserver mExternalObserver;
 
+    private String[] mFileKeyWords;
+
     /**
      * 运行在 UI 线程的 Handler, 用于运行监听器回调
      */
     private final Handler mUiHandler = new Handler(Looper.getMainLooper());
 
-    private ScreenCapturetListenManager(Context context) {
+    private ScreenCapturetListenManager(Context context, String[] fileKeyWords) {
         if (context == null) {
             throw new IllegalArgumentException("The context must not be null.");
         }
@@ -90,6 +92,7 @@ public class ScreenCapturetListenManager {
                 Log.e("lewinScreen","Get screen real size failed.");
             }
         }
+        mFileKeyWords = fileKeyWords;
     }
 
     public static ScreenCapturetListenManager newInstance(Context context) {
@@ -276,6 +279,16 @@ public class ScreenCapturetListenManager {
                 return true;
             }
         }
+
+        // 判断图片路径是否含有指定的关键字之一, 如果有, 则认为当前截屏了
+        if (mFileKeyWords != null && mFileKeyWords.length > 0) {
+            for (String keyWork : mFileKeyWords) {
+                if (data.contains(keyWork)) {
+                    return true;
+                }
+            }
+        }
+        
 
         return false;
     }
