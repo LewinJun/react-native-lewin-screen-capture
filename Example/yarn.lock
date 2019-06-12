@@ -5251,9 +5251,9 @@ react-is@^16.5.0:
   version "16.5.2"
   resolved "https://registry.npmjs.org/react-is/-/react-is-16.5.2.tgz#e2a7b7c3f5d48062eb769fcb123505eb928722e3"
 
-react-native-lewin-screen-capture@1.0.4:
-  version "1.0.4"
-  resolved "https://registry.npmjs.org/react-native-lewin-screen-capture/-/react-native-lewin-screen-capture-1.0.4.tgz#9eb11d48a7e80e1a4a7477f84da9830769f82214"
+react-native-lewin-screen-capture@1.0.5:
+  version "1.0.5"
+  resolved "https://registry.npmjs.org/react-native-lewin-screen-capture/-/react-native-lewin-screen-capture-1.0.5.tgz#3eefd5126f8a72f34403dbdbe0d5d9e5becf0a83"
 
 react-native@0.57.2:
   version "0.57.2"
