@@ -1,6 +1,6 @@
 {
   "name": "react-native-lewin-screen-capture",
-  "version": "1.0.6",
+  "version": "1.1",
   "description": "获取系统截屏事件与获取当前屏幕截屏",
   "main": "index.js",
   "scripts": {

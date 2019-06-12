@@ -4,8 +4,6 @@ package com.lewin.qrcode;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -14,7 +12,7 @@ import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Base64;
-import android.view.View;
+import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
@@ -35,7 +33,6 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 
-import javax.annotation.Nullable;
 
 
 /**
@@ -61,7 +58,11 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void startListener(String[] keywords,Promise promise) {
+    public void startListener(String keywords,Promise promise) {
+        String[] keys = null;
+        if (keywords != null && keywords.length() > 0) {
+            keys = keywords.split(",");
+        }
 
         if (Build.VERSION.SDK_INT > 22) {
             List<String> permissionList = new ArrayList<>();
@@ -69,7 +70,8 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
             if (ContextCompat.checkSelfPermission(reactContext, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 permissionList.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             } else {
-                this.startListenerCapture(promise, keywords);
+
+                this.startListenerCapture(promise, keys);
             }
             if (permissionList != null && (permissionList.size() != 0)) {
                 Activity activity = getCurrentActivity();
@@ -80,7 +82,7 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
             }
 
         }else {
-            this.startListenerCapture(promise, keywords);
+            this.startListenerCapture(promise, keys);
         }
     }
 
