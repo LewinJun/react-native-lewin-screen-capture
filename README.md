@@ -6,7 +6,7 @@ react-native 获取系统截屏通知并获取图片/截取当前屏幕
 - [Usage](#usage)
 
 ## Install
-### 1: yarn add 或者npm install,现在最新版本是1.0.0
+### 1: yarn add 或者npm install,现在最新版本是1.1.0 支持0.6X版本 androidx
 `yarn add react-native-lewin-screen-capture  `
 ### 2: yarn install 或 npm install
 ### 3: react-native link react-native-lewin-screen-capture
