@@ -1,6 +1,10 @@
 
 import groovy.json.JsonSlurper
 
+def safeExtGet(prop, fallback) {
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
 def computeVersionName() {
     // dynamically retrieve version from package.json
     def slurper = new JsonSlurper()
@@ -25,12 +29,12 @@ buildscript {
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion "27.0.3"
+    compileSdkVersion safeExtGet('compileSdkVersion', 29)
+    buildToolsVersion safeExtGet('buildToolsVersion', '29.0.2')
 
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 26
+        minSdkVersion safeExtGet('minSdkVersion', 16)
+        targetSdkVersion safeExtGet('targetSdkVersion', 29)
         versionCode 1
         versionName computeVersionName()
     }
@@ -54,6 +58,6 @@ repositories {
 }
 
 dependencies {
-    compile 'com.facebook.react:react-native:+'
-    compile 'com.google.zxing:core:3.3.2'
+    implementation 'com.facebook.react:react-native:+'
+    implementation 'com.google.zxing:core:3.3.2'
 }

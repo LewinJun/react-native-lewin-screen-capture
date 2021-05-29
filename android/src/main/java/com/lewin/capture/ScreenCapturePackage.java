@@ -1,4 +1,4 @@
-package com.lewin.qrcode;
+package com.lewin.capture;
 
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.NativeModule;

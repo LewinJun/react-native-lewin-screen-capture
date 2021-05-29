@@ -1,4 +1,4 @@
-package com.lewin.qrcode;
+package com.lewin.capture;
 
 import android.content.Context;
 import android.database.ContentObserver;
