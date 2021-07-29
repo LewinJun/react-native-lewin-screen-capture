@@ -9,6 +9,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Environment;
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.util.Base64;
@@ -105,8 +106,19 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void screenCapture(Boolean isHiddenStatus,Promise promise) {
-        promise.resolve(shotActivity(getCurrentActivity(), isHiddenStatus));
+    public void screenCapture(Boolean isHiddenStatus, String extension, Integer quality, final Promise promise) {
+        shotActivity(
+            getCurrentActivity(),
+            isHiddenStatus,
+            extension,
+            quality,
+            new ResultCallback() {
+                @Override
+                public void invoke(WritableMap result) {
+                    promise.resolve(result);
+                }
+            }
+        );
     }
 
     @ReactMethod
@@ -153,7 +165,7 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
                                     WritableMap map = Arguments.createMap();
                                     map.putString("code", "200");
                                     map.putString("uri", imagePath.indexOf("file://") == 0 ? imagePath : "file://" + imagePath);
-                                    map.putString("base64", bitmapToBase64(BitmapFactory.decodeFile(imagePath)));
+                                    map.putString("base64", bitmapToBase64(BitmapFactory.decodeFile(imagePath), "png", 100));
                                     reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("ScreenCapture", map);
                                 }
                             }
@@ -174,38 +186,80 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
      * 根据指定的Activity截图（带空白的状态栏）
      *
      * @param context 要截图的Activity
-     * @return Bitmap
+     * @param isHiddenStatus
+     * @param extension output extension
+     * @param quality output quality
+     * @param callback
+     * @return
      */
-    public static  WritableMap shotActivity(Activity context, Boolean isHiddenStatus) {
-        WritableMap map = Arguments.createMap();
-        Bitmap bitmap = isHiddenStatus ? ScreenUtils.snapShotWithoutStatusBar(context) : ScreenUtils.snapShotWithStatusBar(context);
+    public static void shotActivity(Activity context, final Boolean isHiddenStatus, final String extension, final int quality, final ResultCallback callback) {
+        CaptureCallback captureCallback = new CaptureCallback() {
+            @Override
+            public void invoke(@Nullable Bitmap bitmap) {
+                WritableMap map = Arguments.createMap();
+                if (bitmap != null) {
+                    try {
+                        map.putString("code", "200");
+                        map.putString("uri", "file://" + saveFile(bitmap, extension, quality));
+                        map.putString("base64", bitmapToBase64(bitmap, extension, quality));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        map.putString("code", "500");
+                    }
+                } else {
+                    map.putString("code", "500");
+                }
+                callback.invoke(map);
+            }
+        };
+        if (isHiddenStatus) {
+            ScreenUtils.snapShotWithoutStatusBar(context, captureCallback);
+        } else {
+            ScreenUtils.snapShotWithStatusBar(context, captureCallback);
+        }
+    }
+
+    /**
+     * save bitmap to file
+     * 
+     * @param bitmap
+     * @param extension
+     * @param quality
+     * @return 
+     */
+    private static String saveFile(Bitmap bitmap, String extension, int quality) throws Exception {
         Calendar now = new GregorianCalendar();
         SimpleDateFormat simpleDate = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
-        String fileName = Environment.getExternalStorageDirectory() + path + simpleDate.format(now.getTime()) + ".png";
-        try {
-            File fileDir = new File(Environment.getExternalStorageDirectory() + path);
-            if(!fileDir.exists()) {
-                fileDir.mkdir();
-            }
-            File file = new File(fileName);
-            if(file.exists()) {
-                file.delete();
-            }
-            file.createNewFile();
-            FileOutputStream out = new FileOutputStream(file);
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-            out.flush();
-            out.close();
-            map.putString("code", "200");
-            map.putString("uri", "file://" + fileName);
-            map.putString("base64", bitmapToBase64(bitmap));
-        } catch (Exception e) {
-            e.printStackTrace();
-            map.putString("code", "500");
+        String fileName = Environment.getExternalStorageDirectory() + path + simpleDate.format(now.getTime()) + "." + extension;
+        File fileDir = new File(Environment.getExternalStorageDirectory() + path);
+        if(!fileDir.exists()) {
+            fileDir.mkdir();
         }
+        File file = new File(fileName);
+        if(file.exists()) {
+            file.delete();
+        }
+        file.createNewFile();
+        FileOutputStream out = new FileOutputStream(file);
+        bitmap.compress(extToCompressFormat(extension), quality, out);
+        out.flush();
+        out.close();
+        return fileName;
+    }
 
-
-        return map;
+    /**
+     * extension to CompressFormat
+     * 
+     * @param extension
+     * @return
+     */
+    private static Bitmap.CompressFormat extToCompressFormat(String extension) {
+        switch (extension) {
+            case "png": return Bitmap.CompressFormat.PNG;
+            case "jpg":
+            case "jpeg": return Bitmap.CompressFormat.JPEG;
+            default: return Bitmap.CompressFormat.PNG;
+        }
     }
 
 
@@ -213,16 +267,17 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
      * bitmap转为base64
      *
      * @param bitmap
+     * @param extension
      * @return
      */
-    public static String bitmapToBase64(Bitmap bitmap) {
+    public static String bitmapToBase64(Bitmap bitmap, String extension, int quality) {
 
         String result = null;
         ByteArrayOutputStream baos = null;
         try {
             if (bitmap != null) {
                 baos = new ByteArrayOutputStream();
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                bitmap.compress(extToCompressFormat(extension), quality, baos);
 
                 baos.flush();
                 baos.close();
