@@ -147,7 +147,7 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
         }
         long time = (long)[[NSDate new] timeIntervalSince1970];
         NSString *filePath = @"";
-        if ([extension isEqualToString:@"jpeg"]) {
+        if ([extension isEqualToString:@"jpeg"] || [extension isEqualToString:@"jpg"]) {
             filePath = [path stringByAppendingPathComponent:
                               [NSString stringWithFormat:@"screen-capture-%ld.jpg", time]];
         } else {
