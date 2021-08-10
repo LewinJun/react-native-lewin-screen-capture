@@ -132,7 +132,7 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
 //         }
 //         CGContextRestoreGState(context);
 //     }
-    [self sendEventWithName:@"ScreenCapture" body:[self screenImage:NO extension:@"png" quality:[NSNumber numberWithInt:100]]];
+    [self sendEventWithName:@"ScreenCapture" body:[self screenImage:NO extension:@"png" quality:[NSNumber numberWithInt:100] scale:nil]];
 }
 
 - (NSDictionary*) screenImage:(BOOL)isHiddenStatus extension:(NSString*)extension quality:(NSNumber*)quality scale:(NSNumber*)scale {
