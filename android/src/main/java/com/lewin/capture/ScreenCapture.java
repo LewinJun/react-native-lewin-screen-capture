@@ -5,6 +5,7 @@ package com.lewin.capture;
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.graphics.Matrix;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
@@ -106,12 +107,13 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void screenCapture(Boolean isHiddenStatus, String extension, Integer quality, final Promise promise) {
+    public void screenCapture(Boolean isHiddenStatus, String extension, Integer quality, Double scale, final Promise promise) {
         shotActivity(
             getCurrentActivity(),
             isHiddenStatus,
             extension,
             quality,
+            scale,
             new ResultCallback() {
                 @Override
                 public void invoke(WritableMap result) {
@@ -189,19 +191,21 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
      * @param isHiddenStatus
      * @param extension output extension
      * @param quality output quality
+     * @param scale scale output size
      * @param callback
      * @return
      */
-    public static void shotActivity(Activity context, final Boolean isHiddenStatus, final String extension, final int quality, final ResultCallback callback) {
+    public static void shotActivity(Activity context, final Boolean isHiddenStatus, final String extension, final int quality, final Double scale, final ResultCallback callback) {
         CaptureCallback captureCallback = new CaptureCallback() {
             @Override
             public void invoke(@Nullable Bitmap bitmap) {
                 WritableMap map = Arguments.createMap();
+                Bitmap outputBitmap = (scale != null) ? resizeBitmap(bitmap, scale.floatValue()) : bitmap;
                 if (bitmap != null) {
                     try {
                         map.putString("code", "200");
-                        map.putString("uri", "file://" + saveFile(bitmap, extension, quality));
-                        map.putString("base64", bitmapToBase64(bitmap, extension, quality));
+                        map.putString("uri", "file://" + saveFile(outputBitmap, extension, quality));
+                        map.putString("base64", bitmapToBase64(outputBitmap, extension, quality));
                     } catch (Exception e) {
                         e.printStackTrace();
                         map.putString("code", "500");
@@ -245,6 +249,24 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
         out.flush();
         out.close();
         return fileName;
+    }
+
+    /**
+     * Resize bitmap
+     * 
+     * @param src
+     * @param newWidth
+     * @param newHeight
+     * @return
+     */
+    private static Bitmap resizeBitmap(Bitmap src, float scale) {
+        int width = src.getWidth();
+        int height = src.getHeight();
+        Matrix matrix = new Matrix();
+        matrix.postScale(scale, scale);
+        Bitmap resizedBitmap = Bitmap.createBitmap(src, 0, 0, width, height, matrix, false);
+        src.recycle();
+        return resizedBitmap;
     }
 
     /**

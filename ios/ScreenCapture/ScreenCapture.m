@@ -33,10 +33,10 @@ RCT_EXPORT_METHOD(startListener:(RCTPromiseResolveBlock)success failure:(RCTResp
     });
 }
 
-RCT_EXPORT_METHOD(screenCapture:(BOOL)isHiddenStatus extension:(nonnull NSString*)extension quality:(nonnull NSNumber*)quality success:(RCTPromiseResolveBlock)success failure:(RCTResponseErrorBlock)failure){
+RCT_EXPORT_METHOD(screenCapture:(BOOL)isHiddenStatus extension:(nonnull NSString*)extension quality:(nonnull NSNumber*)quality scale:(nullable NSNumber*)scale success:(RCTPromiseResolveBlock)success failure:(RCTResponseErrorBlock)failure){
     dispatch_sync(dispatch_get_main_queue(), ^{
         @try{
-            success([self screenImage: isHiddenStatus extension:extension quality:quality]);
+            success([self screenImage: isHiddenStatus extension:extension quality:quality scale:scale]);
         }@catch(NSException *ex){
             NSString *domain = @"lewin.error";
             NSString *desc = NSLocalizedString(@"开启失败", @"");
@@ -135,7 +135,7 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
     [self sendEventWithName:@"ScreenCapture" body:[self screenImage:NO extension:@"png" quality:[NSNumber numberWithInt:100]]];
 }
 
-- (NSDictionary*) screenImage:(BOOL)isHiddenStatus extension:(NSString*)extension quality:(NSNumber*)quality {
+- (NSDictionary*) screenImage:(BOOL)isHiddenStatus extension:(NSString*)extension quality:(NSNumber*)quality scale:(NSNumber*)scale {
     @try{
         UIImage *image = isHiddenStatus ? [self screenshotWithStatusBar:false] : [self screenshot];
         NSArray *paths =NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask,YES);
@@ -158,20 +158,28 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
         @try{
             // UIGraphicsEndImageContext();
             //    UIImageWriteToSavedPhotosAlbum(image, self, nil, nil);
+            UIImage *outputImage = image;
+            if (scale != nil) {
+                outputImage =
+                    [UIImage
+                        imageWithCGImage:[image CGImage]
+                        scale:(image.scale * [scale floatValue])
+                        orientation:(image.imageOrientation)];
+            }
             // 保存文件的名称
             if ([extension isEqualToString:@"jpeg"]) {
                 CGFloat floatQuality = [quality floatValue] / 100.0;
-                BOOL result = [UIImageJPEGRepresentation(image, floatQuality)writeToFile:filePath atomically:YES]; // 保存成功会返回YES
+                BOOL result = [UIImageJPEGRepresentation(outputImage, floatQuality) writeToFile:filePath atomically:YES]; // 保存成功会返回YES
                 if (result == YES) {
                     NSLog(@"保存成功");
                 }
-                encodedImageStr = [UIImageJPEGRepresentation(image, floatQuality) base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
+                encodedImageStr = [UIImageJPEGRepresentation(outputImage, floatQuality) base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
             } else {
-                BOOL result = [UIImagePNGRepresentation(image)writeToFile:filePath atomically:YES]; // 保存成功会返回YES
+                BOOL result = [UIImagePNGRepresentation(outputImage) writeToFile:filePath atomically:YES]; // 保存成功会返回YES
                 if (result == YES) {
                     NSLog(@"保存成功");
                 }
-                encodedImageStr = [UIImagePNGRepresentation(image) base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
+                encodedImageStr = [UIImagePNGRepresentation(outputImage) base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
             }
         }@catch(NSException *ex) {
             NSLog(@"保存图片失败：%@", ex.description);
