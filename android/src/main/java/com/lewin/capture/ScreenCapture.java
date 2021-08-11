@@ -200,8 +200,8 @@ public class ScreenCapture extends ReactContextBaseJavaModule {
             @Override
             public void invoke(@Nullable Bitmap bitmap) {
                 WritableMap map = Arguments.createMap();
-                Bitmap outputBitmap = (scale != null) ? resizeBitmap(bitmap, scale.floatValue()) : bitmap;
                 if (bitmap != null) {
+                    Bitmap outputBitmap = (scale.floatValue() > 0) ? resizeBitmap(bitmap, scale.floatValue()) : bitmap;
                     try {
                         map.putString("code", "200");
                         map.putString("uri", "file://" + saveFile(outputBitmap, extension, quality));

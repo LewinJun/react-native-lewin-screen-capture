@@ -33,7 +33,7 @@ RCT_EXPORT_METHOD(startListener:(RCTPromiseResolveBlock)success failure:(RCTResp
     });
 }
 
-RCT_EXPORT_METHOD(screenCapture:(BOOL)isHiddenStatus extension:(nonnull NSString*)extension quality:(nonnull NSNumber*)quality scale:(nullable NSNumber*)scale success:(RCTPromiseResolveBlock)success failure:(RCTResponseErrorBlock)failure){
+RCT_EXPORT_METHOD(screenCapture:(BOOL)isHiddenStatus extension:(nonnull NSString*)extension quality:(nonnull NSNumber*)quality scale:(nonnull NSNumber*)scale success:(RCTPromiseResolveBlock)success failure:(RCTResponseErrorBlock)failure){
     dispatch_sync(dispatch_get_main_queue(), ^{
         @try{
             success([self screenImage: isHiddenStatus extension:extension quality:quality scale:scale]);
@@ -132,7 +132,7 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
 //         }
 //         CGContextRestoreGState(context);
 //     }
-    [self sendEventWithName:@"ScreenCapture" body:[self screenImage:NO extension:@"png" quality:[NSNumber numberWithInt:100] scale:nil]];
+    [self sendEventWithName:@"ScreenCapture" body:[self screenImage:NO extension:@"png" quality:[NSNumber numberWithInt:100] scale:[NSNumber numberWithFloat:0]]];
 }
 
 - (NSDictionary*) screenImage:(BOOL)isHiddenStatus extension:(NSString*)extension quality:(NSNumber*)quality scale:(NSNumber*)scale {
@@ -158,16 +158,10 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
         @try{
             // UIGraphicsEndImageContext();
             //    UIImageWriteToSavedPhotosAlbum(image, self, nil, nil);
-            UIImage *outputImage = image;
-            if (scale != nil) {
-                outputImage =
-                    [UIImage
-                        imageWithCGImage:[image CGImage]
-                        scale:(image.scale * [scale floatValue])
-                        orientation:(image.imageOrientation)];
-            }
+            float scaleValue = [scale floatValue] > 0.0f ? [scale floatValue] : 1.0f;
+            UIImage *outputImage = [self scaleImage:image to:scaleValue];
             // 保存文件的名称
-            if ([extension isEqualToString:@"jpeg"]) {
+            if ([extension isEqualToString:@"jpeg"] || [extension isEqualToString:@"jpg"]) {
                 CGFloat floatQuality = [quality floatValue] / 100.0;
                 BOOL result = [UIImageJPEGRepresentation(outputImage, floatQuality) writeToFile:filePath atomically:YES]; // 保存成功会返回YES
                 if (result == YES) {
@@ -190,6 +184,20 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
         NSLog(@"截屏失败：%@", ex.description);
         return @{@"code":@"500", @"errMsg": @"截屏失败"};
     }
+}
+
+- (UIImage *)scaleImage:(UIImage*)image to:(float)scale
+{
+    CGSize size = CGSizeMake((image.size.width * scale), (image.size.height * scale));
+    UIGraphicsBeginImageContext(size);
+
+    [image drawInRect:CGRectMake(0, 0, size.width, size.height)];
+
+    UIImage *outputImage = UIGraphicsGetImageFromCurrentImageContext();
+
+    UIGraphicsEndImageContext();
+
+    return outputImage;
 }
 
 - (UIImage *)screenshotOfView:(UIView *)view
