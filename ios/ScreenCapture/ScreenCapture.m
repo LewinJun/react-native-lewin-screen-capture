@@ -248,6 +248,7 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
 - (UIImage *)screenshotWithStatusBar:(BOOL)withStatusBar
 {
     CGRect screenShotRect = [[UIScreen mainScreen] bounds];
+#if TARGET_OS_IOS
     UIInterfaceOrientation o = [[UIApplication sharedApplication] statusBarOrientation];
     if (UIInterfaceOrientationIsLandscape(o))
     {
@@ -255,21 +256,31 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
         screenShotRect.size.width = screenShotRect.size.height;
         screenShotRect.size.height = oldWidth;
     }
+#endif
     return [self screenshotWithStatusBar:withStatusBar rect:screenShotRect];
 }
 
 - (UIImage *)screenshotWithStatusBar:(BOOL)withStatusBar rect:(CGRect)rect
 {
+#if TARGET_OS_IOS
     UIInterfaceOrientation o = [[UIApplication sharedApplication] statusBarOrientation];
     return [self screenshotWithStatusBar:withStatusBar rect:rect orientation:o];
+#else
+    return [self doScreenshotWithStatusBar:withStatusBar rect:rect];
+#endif
 }
 
+#if TARGET_OS_IOS
 - (UIImage *)screenshotWithStatusBar:(BOOL)withStatusBar rect:(CGRect)rect orientation:(UIInterfaceOrientation)o
+#else
+- (UIImage *)doScreenshotWithStatusBar:(BOOL)withStatusBar rect:(CGRect)rect
+#endif
 {
     CGRect screenRect = [[UIScreen mainScreen] bounds];
     CGFloat screenWidth = CGRectGetWidth(screenRect);
     CGFloat screenHeight = CGRectGetHeight(screenRect);
     CGAffineTransform preTransform = CGAffineTransformIdentity;
+#if TARGET_OS_IOS
     switch (o)
     {
         case UIInterfaceOrientationPortrait:
@@ -306,7 +317,10 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
         default:
             break;
     }
-    
+#else
+    preTransform = CGAffineTransformTranslate(preTransform, -rect.origin.x, -rect.origin.y);
+#endif
+
     // Create a graphics context with the target size
     // On iOS 4 and later, use UIGraphicsBeginImageContextWithOptions to take the scale into consideration
     // On iOS prior to 4, fall back to use UIGraphicsBeginImageContext
@@ -350,7 +364,8 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
             // Restore the context
             CGContextRestoreGState(context);
         }
-        
+
+#if TARGET_OS_IOS
         // Screenshot status bar if next window's window level > status bar window level
         NSArray *windows = [[UIApplication sharedApplication] windows];
         NSUInteger currentWindowIndex = [windows indexOfObject:window];
@@ -371,6 +386,7 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
                 hasTakenStatusBarScreenshot = YES;
             }
         }
+#endif
     }
     
     // Retrieve the screenshot image
@@ -381,15 +397,17 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
     return image;
 }
 
+#if TARGET_OS_IOS
 - (void)mergeStatusBarToContext:(CGContextRef)context
                            rect:(CGRect)rect
           screenshotOrientation:(UIInterfaceOrientation)o
 {
     UIView *statusBarView = [UIView statusBarInstance_ComOpenThreadOTScreenshotHelper];
-    UIInterfaceOrientation statusBarOrientation = [[UIApplication sharedApplication] statusBarOrientation];
     CGFloat screenWidth = [[UIScreen mainScreen] bounds].size.width;
     CGFloat screenHeight = [[UIScreen mainScreen] bounds].size.height;
     CGAffineTransform preTransform = CGAffineTransformIdentity;
+
+    UIInterfaceOrientation statusBarOrientation = [[UIApplication sharedApplication] statusBarOrientation];
     if (o == statusBarOrientation)
     {
         preTransform = CGAffineTransformTranslate(preTransform, -rect.origin.x, -rect.origin.y);
@@ -438,7 +456,7 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
         preTransform = CGAffineTransformRotate(preTransform, - M_PI_2);
         preTransform = CGAffineTransformTranslate(preTransform, CGRectGetMaxY(rect) - screenWidth, -rect.origin.x);
     }
-    
+
     // -renderInContext: renders in the coordinate space of the layer,
     // so we must first apply the layer's geometry to the graphics context
     CGContextSaveGState(context);
@@ -459,5 +477,6 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
     // Restore the context
     CGContextRestoreGState(context);
 }
+#endif
 
 @end
