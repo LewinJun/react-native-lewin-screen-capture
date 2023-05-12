@@ -33,10 +33,10 @@ RCT_EXPORT_METHOD(startListener:(RCTPromiseResolveBlock)success failure:(RCTResp
     });
 }
 
-RCT_EXPORT_METHOD(screenCapture:(BOOL)isHiddenStatus success:(RCTPromiseResolveBlock)success failure:(RCTResponseErrorBlock)failure){
+RCT_EXPORT_METHOD(screenCapture:(BOOL)isHiddenStatus extension:(nonnull NSString*)extension quality:(nonnull NSNumber*)quality scale:(nonnull NSNumber*)scale success:(RCTPromiseResolveBlock)success failure:(RCTResponseErrorBlock)failure){
     dispatch_sync(dispatch_get_main_queue(), ^{
         @try{
-            success([self screenImage: isHiddenStatus]);
+            success([self screenImage: isHiddenStatus extension:extension quality:quality scale:scale]);
         }@catch(NSException *ex){
             NSString *domain = @"lewin.error";
             NSString *desc = NSLocalizedString(@"开启失败", @"");
@@ -132,10 +132,10 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
 //         }
 //         CGContextRestoreGState(context);
 //     }
-    [self sendEventWithName:@"ScreenCapture" body:[self screenImage:NO]];
+    [self sendEventWithName:@"ScreenCapture" body:[self screenImage:NO extension:@"png" quality:[NSNumber numberWithInt:100] scale:[NSNumber numberWithFloat:0]]];
 }
 
-- (NSDictionary*) screenImage:(BOOL)isHiddenStatus {
+- (NSDictionary*) screenImage:(BOOL)isHiddenStatus extension:(NSString*)extension quality:(NSNumber*)quality scale:(NSNumber*)scale {
     @try{
         UIImage *image = isHiddenStatus ? [self screenshotWithStatusBar:false] : [self screenshot];
         NSArray *paths =NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask,YES);
@@ -146,18 +146,34 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
             [fileManager createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:nil];
         }
         long time = (long)[[NSDate new] timeIntervalSince1970];
-        NSString *filePath = [path stringByAppendingPathComponent:
+        NSString *filePath = @"";
+        if ([extension isEqualToString:@"jpeg"] || [extension isEqualToString:@"jpg"]) {
+            filePath = [path stringByAppendingPathComponent:
+                              [NSString stringWithFormat:@"screen-capture-%ld.jpg", time]];
+        } else {
+            filePath = [path stringByAppendingPathComponent:
                               [NSString stringWithFormat:@"screen-capture-%ld.png", time]];
+        }
         NSString *encodedImageStr = @"";
         @try{
             // UIGraphicsEndImageContext();
             //    UIImageWriteToSavedPhotosAlbum(image, self, nil, nil);
+            float scaleValue = [scale floatValue] > 0.0f ? [scale floatValue] : 1.0f;
+            UIImage *outputImage = [self scaleImage:image to:scaleValue];
             // 保存文件的名称
-            
-            BOOL result =[UIImagePNGRepresentation(image)writeToFile:filePath atomically:YES]; // 保存成功会返回YES
-            encodedImageStr = [UIImagePNGRepresentation(image) base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
-            if (result == YES) {
-                NSLog(@"保存成功");
+            if ([extension isEqualToString:@"jpeg"] || [extension isEqualToString:@"jpg"]) {
+                CGFloat floatQuality = [quality floatValue] / 100.0;
+                BOOL result = [UIImageJPEGRepresentation(outputImage, floatQuality) writeToFile:filePath atomically:YES]; // 保存成功会返回YES
+                if (result == YES) {
+                    NSLog(@"保存成功");
+                }
+                encodedImageStr = [UIImageJPEGRepresentation(outputImage, floatQuality) base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
+            } else {
+                BOOL result = [UIImagePNGRepresentation(outputImage) writeToFile:filePath atomically:YES]; // 保存成功会返回YES
+                if (result == YES) {
+                    NSLog(@"保存成功");
+                }
+                encodedImageStr = [UIImagePNGRepresentation(outputImage) base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
             }
         }@catch(NSException *ex) {
             NSLog(@"保存图片失败：%@", ex.description);
@@ -168,6 +184,20 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
         NSLog(@"截屏失败：%@", ex.description);
         return @{@"code":@"500", @"errMsg": @"截屏失败"};
     }
+}
+
+- (UIImage *)scaleImage:(UIImage*)image to:(float)scale
+{
+    CGSize size = CGSizeMake((image.size.width * scale), (image.size.height * scale));
+    UIGraphicsBeginImageContext(size);
+
+    [image drawInRect:CGRectMake(0, 0, size.width, size.height)];
+
+    UIImage *outputImage = UIGraphicsGetImageFromCurrentImageContext();
+
+    UIGraphicsEndImageContext();
+
+    return outputImage;
 }
 
 - (UIImage *)screenshotOfView:(UIView *)view
@@ -218,6 +248,7 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
 - (UIImage *)screenshotWithStatusBar:(BOOL)withStatusBar
 {
     CGRect screenShotRect = [[UIScreen mainScreen] bounds];
+#if TARGET_OS_IOS
     UIInterfaceOrientation o = [[UIApplication sharedApplication] statusBarOrientation];
     if (UIInterfaceOrientationIsLandscape(o))
     {
@@ -225,21 +256,31 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
         screenShotRect.size.width = screenShotRect.size.height;
         screenShotRect.size.height = oldWidth;
     }
+#endif
     return [self screenshotWithStatusBar:withStatusBar rect:screenShotRect];
 }
 
 - (UIImage *)screenshotWithStatusBar:(BOOL)withStatusBar rect:(CGRect)rect
 {
+#if TARGET_OS_IOS
     UIInterfaceOrientation o = [[UIApplication sharedApplication] statusBarOrientation];
     return [self screenshotWithStatusBar:withStatusBar rect:rect orientation:o];
+#else
+    return [self doScreenshotWithStatusBar:withStatusBar rect:rect];
+#endif
 }
 
+#if TARGET_OS_IOS
 - (UIImage *)screenshotWithStatusBar:(BOOL)withStatusBar rect:(CGRect)rect orientation:(UIInterfaceOrientation)o
+#else
+- (UIImage *)doScreenshotWithStatusBar:(BOOL)withStatusBar rect:(CGRect)rect
+#endif
 {
     CGRect screenRect = [[UIScreen mainScreen] bounds];
     CGFloat screenWidth = CGRectGetWidth(screenRect);
     CGFloat screenHeight = CGRectGetHeight(screenRect);
     CGAffineTransform preTransform = CGAffineTransformIdentity;
+#if TARGET_OS_IOS
     switch (o)
     {
         case UIInterfaceOrientationPortrait:
@@ -276,7 +317,10 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
         default:
             break;
     }
-    
+#else
+    preTransform = CGAffineTransformTranslate(preTransform, -rect.origin.x, -rect.origin.y);
+#endif
+
     // Create a graphics context with the target size
     // On iOS 4 and later, use UIGraphicsBeginImageContextWithOptions to take the scale into consideration
     // On iOS prior to 4, fall back to use UIGraphicsBeginImageContext
@@ -320,7 +364,8 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
             // Restore the context
             CGContextRestoreGState(context);
         }
-        
+
+#if TARGET_OS_IOS
         // Screenshot status bar if next window's window level > status bar window level
         NSArray *windows = [[UIApplication sharedApplication] windows];
         NSUInteger currentWindowIndex = [windows indexOfObject:window];
@@ -341,6 +386,7 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
                 hasTakenStatusBarScreenshot = YES;
             }
         }
+#endif
     }
     
     // Retrieve the screenshot image
@@ -351,15 +397,17 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
     return image;
 }
 
+#if TARGET_OS_IOS
 - (void)mergeStatusBarToContext:(CGContextRef)context
                            rect:(CGRect)rect
           screenshotOrientation:(UIInterfaceOrientation)o
 {
     UIView *statusBarView = [UIView statusBarInstance_ComOpenThreadOTScreenshotHelper];
-    UIInterfaceOrientation statusBarOrientation = [[UIApplication sharedApplication] statusBarOrientation];
     CGFloat screenWidth = [[UIScreen mainScreen] bounds].size.width;
     CGFloat screenHeight = [[UIScreen mainScreen] bounds].size.height;
     CGAffineTransform preTransform = CGAffineTransformIdentity;
+
+    UIInterfaceOrientation statusBarOrientation = [[UIApplication sharedApplication] statusBarOrientation];
     if (o == statusBarOrientation)
     {
         preTransform = CGAffineTransformTranslate(preTransform, -rect.origin.x, -rect.origin.y);
@@ -408,7 +456,7 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
         preTransform = CGAffineTransformRotate(preTransform, - M_PI_2);
         preTransform = CGAffineTransformTranslate(preTransform, CGRectGetMaxY(rect) - screenWidth, -rect.origin.x);
     }
-    
+
     // -renderInContext: renders in the coordinate space of the layer,
     // so we must first apply the layer's geometry to the graphics context
     CGContextSaveGState(context);
@@ -429,5 +477,6 @@ RCT_EXPORT_METHOD(clearCache:(RCTPromiseResolveBlock)success failure:(RCTRespons
     // Restore the context
     CGContextRestoreGState(context);
 }
+#endif
 
 @end

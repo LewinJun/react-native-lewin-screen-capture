@@ -3,9 +3,15 @@ package com.lewin.capture;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.util.DisplayMetrics;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
+import android.view.PixelCopy;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Build;
 
 public class ScreenUtils
 {
@@ -73,20 +79,48 @@ public class ScreenUtils
      * 获取当前屏幕截图，包含状态栏
      *
      * @param activity
+     * @param callback
      * @return
      */
-    public static Bitmap snapShotWithStatusBar(Activity activity)
+    public static void snapShotWithStatusBar(Activity activity, final CaptureCallback callback)
     {
-        View view = activity.getWindow().getDecorView();
-        view.setDrawingCacheEnabled(true);
-        view.buildDrawingCache();
-        Bitmap bmp = view.getDrawingCache();
+        Window window = activity.getWindow();
+        View view = window.getDecorView();
         int width = getScreenWidth(activity);
         int height = getScreenHeight(activity);
-        Bitmap bp = null;
-        bp = Bitmap.createBitmap(bmp, 0, 0, width, height);
-        view.destroyDrawingCache();
-        return bp;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Rect rect = new Rect(
+                0,
+                0,
+                width,
+                height
+            );
+            final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            PixelCopy.request(
+                window,
+                rect,
+                bitmap,
+                new PixelCopy.OnPixelCopyFinishedListener() {
+                    @Override
+                    public void onPixelCopyFinished(int copyResult) {
+                        if (copyResult == PixelCopy.SUCCESS) {
+                            callback.invoke(bitmap);
+                        } else {
+                            callback.invoke(null);
+                        }
+                    }
+                },
+                new Handler(Looper.getMainLooper())
+            );
+        } else {
+            view.setDrawingCacheEnabled(true);
+            view.buildDrawingCache();
+            Bitmap bmp = view.getDrawingCache();
+            Bitmap bp = null;
+            bp = Bitmap.createBitmap(bmp, 0, 0, width, height);
+            view.destroyDrawingCache();
+            callback.invoke(bp);
+        }
 
     }
 
@@ -94,24 +128,51 @@ public class ScreenUtils
      * 获取当前屏幕截图，不包含状态栏
      *
      * @param activity
+     * @param callback
      * @return
      */
-    public static Bitmap snapShotWithoutStatusBar(Activity activity)
+    public static void snapShotWithoutStatusBar(Activity activity, final CaptureCallback callback)
     {
-        View view = activity.getWindow().getDecorView();
-        view.setDrawingCacheEnabled(true);
-        view.buildDrawingCache();
-        Bitmap bmp = view.getDrawingCache();
-
+        Window window = activity.getWindow();
+        View view = window.getDecorView();
         int statusBarHeight = getStatusHeight(activity);
-
         int width = getScreenWidth(activity);
         int height = getScreenHeight(activity);
-        Bitmap bp = null;
-        bp = Bitmap.createBitmap(bmp, 0, statusBarHeight , width, height
-                - statusBarHeight);
-        view.destroyDrawingCache();
-        return bp;
+
+        if (Build.VERSION.SDK_INT >= 24) {
+            Rect rect = new Rect(
+                0,
+                statusBarHeight,
+                width,
+                height
+            );
+            final Bitmap bitmap = Bitmap.createBitmap(width, height - statusBarHeight, Bitmap.Config.ARGB_8888);
+            PixelCopy.request(
+                window,
+                rect,
+                bitmap,
+                new PixelCopy.OnPixelCopyFinishedListener() {
+                    @Override
+                    public void onPixelCopyFinished(int copyResult) {
+                        if (copyResult == PixelCopy.SUCCESS) {
+                            callback.invoke(bitmap);
+                        } else {
+                            callback.invoke(null);
+                        }
+                    }
+                },
+                new Handler(Looper.getMainLooper())
+            );
+        } else {
+            view.setDrawingCacheEnabled(true);
+            view.buildDrawingCache();
+            Bitmap bmp = view.getDrawingCache();
+            Bitmap bp = null;
+            bp = Bitmap.createBitmap(bmp, 0, statusBarHeight , width, height
+                    - statusBarHeight);
+            view.destroyDrawingCache();
+            callback.invoke(bp);
+        }
 
     }
 
